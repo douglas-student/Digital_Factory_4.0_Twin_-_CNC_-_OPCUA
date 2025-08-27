@@ -1,0 +1,17 @@
+# Arquivos gerados e de configuração
+docker-compose.yml
+
+# Variáveis de ambiente e credenciais
+.env
+db_connection.php
+
+# Diretórios e arquivos de ambiente Python
+__pycache__/
+*.pyc
+venv/
+
+# Volumes de dados do Docker (para evitar o upload de dados de banco de dados)
+banco_de_dados_data/
+
+# Logs do Docker
+docker-compose.log
