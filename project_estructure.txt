@@ -1,11 +1,17 @@
 .
 ├── starter_project.py
+├── stopper_project.py
+├── update_webinterface.py
 ├── docker-compose.yml
+├── LICENSE
+├── readme.md
+├── project_estructure.txt
 ├── simulador_cnc/
 │   ├── Dockerfile
 │   ├── src/
 │   │   ├── simulador_cnc.py
 │   │   └── operador_cnc.py
+│   │   └── tecnico_manutencao.py
 │   └── requirements.txt
 ├── monitoramento/
 │   ├── Dockerfile
@@ -20,6 +26,7 @@
     │   ├── index.php
     │   ├── assets/
     │   │   ├── css/
+    |   |   |   └── style.css
     │   │   └── js/
     │   └── includes/
     │       └── db_connection.php
