@@ -4,35 +4,13 @@ body {
     font-family: Arial, sans-serif;
     background-color: #f4f4f4;
     color: #333;
-    margin: 0;
     padding: 0;
-}
-
-header {
-    background-color: #004080;
-    color: white;
-    padding: 1rem 0;
-    text-align: center;
-}
-
-main {
-    padding: 2rem;
-}
-
-.maquinas-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-    justify-content: center;
+    margin: 0;
 }
 
 .maquina-card {
-    background-color: white;
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    width: 280px;
-    padding: 1.5rem;
-    text-align: center;
     transition: transform 0.2s;
 }
 
@@ -43,6 +21,10 @@ main {
 .maquina-card h2 {
     margin-top: 0;
     color: #004080;
+}
+
+.maquina-card .card-body {
+    padding: 1.5rem;
 }
 
 .dados p {
@@ -60,6 +42,10 @@ main {
 
 .status-alarm {
     border-top: 5px solid #dc3545; /* Vermelho para ALARM */
+}
+
+.status-waiting_for_repair {
+    border-top: 5px solid #6c757d; /* Cinza para WAITING_FOR_REPAIR */
 }
 
 .status-text {

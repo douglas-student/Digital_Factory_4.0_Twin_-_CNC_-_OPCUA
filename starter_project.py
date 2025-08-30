@@ -3,34 +3,47 @@ import subprocess
 import os
 import sys
 
+def listar_ips_containers(servicos):
+    """
+    Lista os endereços IP dos contêineres após o início.
+    """
+    print("\nVerificando endereços IP dos contêineres...")
+    for servico in servicos:
+        try:
+            container_ip = subprocess.check_output(
+                ["docker", "inspect", "-f", '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}', servico],
+                text=True
+            ).strip()
+            print(f"Serviço '{servico}': IP {container_ip if container_ip else 'Não encontrado'}")
+        except subprocess.CalledProcessError:
+            print(f"Erro ao inspecionar o serviço '{servico}'. Pode não estar rodando.")
+
 def gerar_docker_compose(num_simuladores):
     """
     Gera o conteúdo do arquivo docker-compose.yml dinamicamente.
     """
     yml_content = """
-version: '3.8'
-
 networks:
   industria40_net:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/24
-          gateway: 172.20.0.1
 
 services:
   banco_de_dados:
     image: postgres:13
     container_name: postgres_db
     networks:
-      industria40_net:
-        ipv4_address: 172.20.0.2
+      - industria40_net
     environment:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=fabrica
     volumes:
       - ./banco_de_dados_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   monitoramento:
     build: ./monitoramento
@@ -38,7 +51,8 @@ services:
     networks:
       - industria40_net
     depends_on:
-      - banco_de_dados
+      banco_de_dados:
+        condition: service_healthy
 """
     endpoints = " ".join([f"opc.tcp://cnc_simulador_{i}:4840/freeopcua/server/" for i in range(1, num_simuladores + 1)])
     
@@ -55,7 +69,8 @@ services:
     networks:
       - industria40_net
     depends_on:
-      - banco_de_dados
+      banco_de_dados:
+        condition: service_healthy
 """
     
     for i in range(1, num_simuladores + 1):
@@ -72,9 +87,6 @@ services:
     return yml_content
 
 def main():
-    """
-    Ponto de entrada do script.
-    """
     try:
         num_simuladores = int(input("Quantos simuladores de CNC você deseja criar? "))
         if num_simuladores < 1:
@@ -89,10 +101,13 @@ def main():
         f.write(gerar_docker_compose(num_simuladores))
 
     print("Iniciando os contêineres. Isso pode demorar na primeira vez...")
+    servicos_para_verificar = ["postgres_db", "web_dashboard", "cliente_monitoramento"] + [f"cnc_simulador_{i}" for i in range(1, num_simuladores + 1)]
     try:
         subprocess.run(["docker-compose", "up", "--build", "-d"], check=True)
         print("\nTodos os contêineres foram iniciados com sucesso!")
-        print("Verifique o status com 'docker-compose ps' ou os logs com 'docker-compose logs -f'.")
+        
+        listar_ips_containers(servicos_para_verificar)
+        
         print("\nPara acessar a plataforma web, abra seu navegador em http://localhost:8080")
     except subprocess.CalledProcessError as e:
         print(f"\nOcorreu um erro ao executar o Docker Compose: {e}")

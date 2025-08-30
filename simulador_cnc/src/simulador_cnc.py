@@ -4,11 +4,12 @@ import time
 import random
 from asyncua import Server, ua
 from operador_cnc import OperadorCNC
+from tecnico_manutencao import TecnicoManutencao
 
 class SimuladorCNC:
     def __init__(self, machine_id):
         self.machine_id = machine_id
-        self.status = "IDLE"
+        self.status = "IDLE" # IDLE, RUNNING, ALARM, WAITING_FOR_REPAIR
         self.producao_total = 0
         self.posicao_eixos = {'x': 0.0, 'y': 0.0, 'z': 0.0}
         self.velocidade_fuso = 0.0
@@ -30,6 +31,12 @@ class SimuladorCNC:
             self.status = "ALARM"
             print(f"[{self.machine_id}] - ALARME ATIVO: {codigo_alarme}")
 
+    def limpar_alarme(self):
+        if self.status == "ALARM":
+            self.alarmes_ativos = []
+            self.status = "IDLE"
+            print(f"[{self.machine_id}] - Alarme limpo. Status retornado para IDLE.")
+
     def atualizar_estado(self):
         if self.status == "RUNNING":
             self.posicao_eixos['x'] += random.uniform(-0.5, 0.5)
@@ -44,6 +51,7 @@ class SimuladorCNC:
 async def main(machine_id, endpoint_url):
     maquina_simulada = SimuladorCNC(machine_id)
     operador_simulado = OperadorCNC(maquina_simulada)
+    tecnico_simulado = TecnicoManutencao(maquina_simulada)
 
     server = Server()
     await server.init()
@@ -74,6 +82,7 @@ async def main(machine_id, endpoint_url):
             await var_alarmes.set_value(str(maquina_simulada.alarmes_ativos))
             
             operador_simulado.executar_acoes()
+            tecnico_simulado.executar_acoes()
             maquina_simulada.atualizar_estado()
             
             await asyncio.sleep(1)

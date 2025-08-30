@@ -46,6 +46,25 @@ async def inserir_dados(conn, dados):
     except Exception as e:
         print(f"Erro ao inserir dados: {e}")
 
+# Lógica para aguardar o banco de dados
+async def saude_do_banco(conn_string, max_retries=10, delay=5):
+    retries = 0
+    while retries < max_retries:
+        print(f"[{time.strftime('%H:%M:%S')}] Tentando conectar e criar tabela... (Tentativa {retries + 1}/{max_retries})")
+        try:
+            conn = await conectar_ao_banco()
+            if conn:
+                await criar_tabela(conn)
+                await conn.close()
+                print("Banco de dados está pronto e tabela criada.")
+                return True
+        except Exception as e:
+            print(f"Aguardando o banco de dados... Detalhe do erro: {e}")
+        
+        await asyncio.sleep(delay)
+        retries += 1
+    return False
+
 # Função de Coleta de Dados OPC-UA
 async def coletar_dados_de_cnc(endpoint_url):
     """Conecta a um servidor OPC-UA e coleta os dados de uma máquina CNC."""
@@ -83,6 +102,8 @@ async def main_monitoramento(lista_de_endpoints):
     if conn:
         await criar_tabela(conn)
         
+        last_known_state = {}
+
         while True:
             print("--------------------")
             print("Iniciando nova rodada de coleta de dados...")
@@ -92,8 +113,14 @@ async def main_monitoramento(lista_de_endpoints):
             
             for resultado in resultados:
                 if resultado:
-                    await inserir_dados(conn, resultado)
-                    print(f"Dados Coletados e Salvos: {resultado['maquina_id']}")
+                    maquina_id = resultado['maquina_id']
+                    
+                    if maquina_id not in last_known_state or last_known_state[maquina_id] != resultado:
+                        await inserir_dados(conn, resultado)
+                        last_known_state[maquina_id] = resultado
+                        print(f"Dados Coletados e Salvos (mudança detectada): {maquina_id}")
+                    else:
+                        print(f"Dados Coletados (sem mudança): {maquina_id}")
             
             print("Rodada de coleta finalizada. Aguardando 10 segundos...")
             await asyncio.sleep(10)
@@ -104,7 +131,6 @@ if __name__ == "__main__":
     if not endpoints:
         print("Por favor, forneça os endpoints dos servidores como argumentos.")
     else:
-        # Acesso às variáveis de ambiente diretamente pelo script
         os.environ['POSTGRES_USER'] = 'user'
         os.environ['POSTGRES_PASSWORD'] = 'password'
         os.environ['POSTGRES_DB'] = 'fabrica'

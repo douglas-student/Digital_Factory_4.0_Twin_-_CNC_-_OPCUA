@@ -9,14 +9,21 @@ def main():
     """
     print("Iniciando a limpeza do ambiente Docker...")
     try:
-        # Para e remove os contêineres e a rede
-        subprocess.run(["docker-compose", "down"], check=True)
+        # Para e remove os contêineres e redes, mas mantém os volumes
+        subprocess.run(["docker-compose", "down", "--remove-orphans"], check=True)
         print("\nAmbiente Docker parado e removido com sucesso!")
         
-        # Opcional: limpa as imagens que não estão mais sendo usadas
-        # Esta linha não é estritamente necessária, mas é uma boa prática
-        # subprocess.run(["docker", "image", "prune", "-f"], check=True)
-        # print("Imagens Docker não usadas foram limpas.")
+        # Pergunta ao usuário se deseja apagar o volume de dados
+        resposta = input("Deseja apagar o volume de dados do banco de dados? (s/n): ")
+        if resposta.lower() == 's':
+            print("Apagando o volume de dados...")
+            
+            if os.name == 'nt': # Verifica se o sistema operacional é Windows
+                subprocess.run(["rmdir", "/s", "/q", "banco_de_dados_data"], check=True, shell=True)
+            else: # Considera sistemas Unix-like (Linux, macOS)
+                subprocess.run(["sudo", "rm", "-rf", "banco_de_dados_data"], check=True)
+
+            print("Volume de dados removido com sucesso!")
         
     except FileNotFoundError:
         print("Erro: Docker ou Docker Compose não encontrado. Verifique a instalação.")
