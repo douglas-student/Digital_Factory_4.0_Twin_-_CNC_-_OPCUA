@@ -20,14 +20,16 @@
 │   └── requirements.txt
 ├── banco_de_dados/
 │   └── .env
-└── php_web/
-    ├── Dockerfile
-    ├── src/
-    │   ├── index.php
-    │   ├── assets/
-    │   │   ├── css/
-    |   |   |   └── style.css
-    │   │   └── js/
-    │   └── includes/
-    │       └── db_connection.php
-    └── php.ini
+├── php_web/
+|   ├── Dockerfile
+|   ├── src/
+|   │   ├── index.php
+|   │   ├── assets/
+|   │   │   ├── css/
+|   |   |   |   └── style.css
+|   │   │   └── js/
+|   │   └── includes/
+|   │       └── db_connection.php
+|   └── php.ini
+└── banco_de_dados/
+    └── .env

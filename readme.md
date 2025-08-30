@@ -1,5 +1,7 @@
 # Projeto: Simulação de Fábrica 4.0 com Docker e OPC-UA
 
+<img src="docs/images/capa-do-projeto-01.png" alt="Capa do Projeto Simulando uma Fábrica 4.0 com CNC" width="100%"/>
+
 Este projeto é uma demonstração de uma arquitetura de Manufatura Inteligente e Indústria 4.0, utilizando Python e Docker. O objetivo é simular uma linha de produção com múltiplos controladores CNC e um sistema central de monitoramento, utilizando o protocolo de comunicação industrial OPC-UA.
 
 -----
@@ -11,6 +13,7 @@ Este projeto é uma demonstração de uma arquitetura de Manufatura Inteligente 
   * [Componentes do Sistema](https://www.google.com/search?q=%23componentes-do-sistema)
       * `starter-project.py`
       * `stopper-project.py`
+      * `update_webinterface.py`
       * `docker-compose.yml`
       * Pasta `simulador_cnc/`
       * Pasta `monitoramento/`
@@ -27,12 +30,18 @@ Este projeto é uma demonstração de uma arquitetura de Manufatura Inteligente 
 
 ### Visão Geral da Arquitetura
 
+<img src="docs/images/rede-servidor-opcua.png" alt="Rede OPC-UA" width="100%"/>
+
 O sistema é composto por múltiplos serviços que se comunicam através de uma rede Docker interna, seguindo o padrão cliente-servidor para a coleta de dados.
 
   * **Orquestrador (`starter-project.py`)**: Ponto de entrada do sistema. É responsável por perguntar ao usuário a quantidade de simuladores CNC a serem criados e, em seguida, gerar e executar o ambiente Docker completo.
   * **Simuladores CNC**: Cada simulador é um contêiner Docker individual que atua como um **servidor OPC-UA**. Ele executa um script Python que simula o comportamento de uma máquina CNC, gerando dados como status, posições de eixos e alarmes.
   * **Sistema de Monitoramento**: Um contêiner Docker separado que funciona como um **cliente OPC-UA**. Ele se conecta a cada um dos simuladores para coletar os dados em tempo real.
   * **Banco de Dados**: Um contêiner que armazena os dados coletados pelo sistema de monitoramento.
+
+### Interface Web de Monitoramento
+
+<img src="docs/images/layout-01.png" alt="Rede OPC-UA" width="100%"/>
 
 ### Estrutura de Arquivos do Projeto
 
@@ -41,18 +50,37 @@ A organização dos arquivos e diretórios reflete a modularidade do projeto.
 ```
 .
 ├── starter_project.py
+├── stopper_project.py
+├── update_webinterface.py
 ├── docker-compose.yml
+├── LICENSE
+├── readme.md
+├── project_estructure.txt
 ├── simulador_cnc/
 │   ├── Dockerfile
 │   ├── src/
 │   │   ├── simulador_cnc.py
 │   │   └── operador_cnc.py
+│   │   └── tecnico_manutencao.py
 │   └── requirements.txt
 ├── monitoramento/
 │   ├── Dockerfile
 │   ├── src/
 │   │   └── cliente_monitoramento.py
 │   └── requirements.txt
+├── banco_de_dados/
+│   └── .env
+├── php_web/
+|   ├── Dockerfile
+|   ├── src/
+|   │   ├── index.php
+|   │   ├── assets/
+|   │   │   ├── css/
+|   |   |   |   └── style.css
+|   │   │   └── js/
+|   │   └── includes/
+|   │       └── db_connection.php
+|   └── php.ini
 └── banco_de_dados/
     └── .env
 ```
@@ -61,12 +89,32 @@ A organização dos arquivos e diretórios reflete a modularidade do projeto.
 
 ### Componentes do Sistema
 
-#### `starter-project.py`
+#### `starter_project.py`
 
 Este script Python atua como o **orquestrador** do projeto. Ele é executado na máquina local (fora de um contêiner) e possui as seguintes funções:
 
   * Gera dinamicamente o arquivo `docker-compose.yml` com base na entrada do usuário.
   * Inicia e gerencia todos os contêineres e suas redes usando `docker-compose`.
+
+#### `stopper_project.py`
+
+Este script Python atua como a ferramenta de limpeza do projeto. Ele é executado na máquina local (fora de um contêiner) e possui as seguintes funções:
+
+  * Para e remove todos os contêineres e suas redes usando docker-compose down.
+
+  * Pergunda ao usuário se ele deseja apagar o volume de dados do banco de dados para iniciar uma nova simulação do zero.
+
+  * Garante que o ambiente Docker esteja totalmente limpo e pronto para uma nova execução, evitando conflitos de porta ou de IP.
+
+#### `update_webinterface.py`
+
+Este script Python atua como uma ferramenta utilitária de desenvolvimento. Ele é executado na máquina local (fora de um contêiner) e possui as seguintes funções:
+
+  * Copia arquivos da pasta php_web na sua máquina local para o contêiner web_dashboard em execução, usando o comando docker cp.
+
+  * Permite que você veja as alterações na interface web (HTML, CSS, PHP) imediatamente, sem precisar reiniciar o ambiente completo.
+
+  * Torna o ciclo de desenvolvimento da plataforma web mais rápido e eficiente.
 
 #### `docker-compose.yml`
 
