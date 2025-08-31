@@ -26,13 +26,18 @@ def gerar_docker_compose(num_simuladores):
 networks:
   industria40_net:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/24
+          gateway: 172.21.0.1
 
 services:
   banco_de_dados:
     image: postgres:13
     container_name: postgres_db
     networks:
-      - industria40_net
+      industria40_net:
+        ipv4_address: 172.21.0.2
     environment:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
@@ -46,6 +51,7 @@ services:
       retries: 5
 
   monitoramento:
+    image: monitoramento-image
     build: ./monitoramento
     container_name: cliente_monitoramento
     networks:
@@ -56,7 +62,8 @@ services:
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=fabrica
     depends_on:
-      - banco_de_dados
+      banco_de_dados:
+        condition: service_healthy
 """
     endpoints = " ".join([f"opc.tcp://cnc_simulador_{i}:4840/freeopcua/server/" for i in range(1, num_simuladores + 1)])
     
@@ -66,6 +73,7 @@ services:
     
     yml_content += """
   web:
+    image: web-dashboard-image
     build: ./php_web
     container_name: web_dashboard
     ports:
@@ -78,12 +86,14 @@ services:
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=fabrica
     depends_on:
-      - banco_de_dados
+      banco_de_dados:
+        condition: service_healthy
 """
     
     for i in range(1, num_simuladores + 1):
         yml_content += f"""
   cnc_simulador_{i}:
+    image: cnc-simulador-image
     build: ./simulador_cnc
     container_name: cnc_simulador_{i}
     networks:
