@@ -1,4 +1,4 @@
-# cliente_monitoramento.py (Versão Final)
+# cliente_monitoramento.py
 import asyncio
 from asyncua import Client
 import time
@@ -47,7 +47,8 @@ async def inserir_dados(conn, dados):
         print(f"Erro ao inserir dados: {e}")
 
 # Lógica para aguardar o banco de dados
-async def saude_do_banco(conn_string, max_retries=10, delay=5):
+async def saude_do_banco(max_retries=10, delay=5):
+    """Tenta conectar e criar a tabela até que o banco esteja pronto."""
     retries = 0
     while retries < max_retries:
         print(f"[{time.strftime('%H:%M:%S')}] Tentando conectar e criar tabela... (Tentativa {retries + 1}/{max_retries})")
@@ -55,15 +56,14 @@ async def saude_do_banco(conn_string, max_retries=10, delay=5):
             conn = await conectar_ao_banco()
             if conn:
                 await criar_tabela(conn)
-                await conn.close()
                 print("Banco de dados está pronto e tabela criada.")
-                return True
+                return conn
         except Exception as e:
             print(f"Aguardando o banco de dados... Detalhe do erro: {e}")
         
         await asyncio.sleep(delay)
         retries += 1
-    return False
+    return None
 
 # Função de Coleta de Dados OPC-UA
 async def coletar_dados_de_cnc(endpoint_url):
@@ -98,10 +98,8 @@ async def coletar_dados_de_cnc(endpoint_url):
 # Função Principal
 async def main_monitoramento(lista_de_endpoints):
     """Função principal que gerencia a coleta de dados e a gravação no banco de dados."""
-    conn = await conectar_ao_banco()
+    conn = await saude_do_banco()
     if conn:
-        await criar_tabela(conn)
-        
         last_known_state = {}
 
         while True:

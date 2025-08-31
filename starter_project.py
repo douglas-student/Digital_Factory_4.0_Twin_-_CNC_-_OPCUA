@@ -40,7 +40,7 @@ services:
     volumes:
       - ./banco_de_dados_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user"]
+      test: ["CMD-SHELL", "pg_isready -U user -d fabrica"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -50,9 +50,13 @@ services:
     container_name: cliente_monitoramento
     networks:
       - industria40_net
+    environment:
+      - POSTGRES_HOST=banco_de_dados
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=fabrica
     depends_on:
-      banco_de_dados:
-        condition: service_healthy
+      - banco_de_dados
 """
     endpoints = " ".join([f"opc.tcp://cnc_simulador_{i}:4840/freeopcua/server/" for i in range(1, num_simuladores + 1)])
     
@@ -68,9 +72,13 @@ services:
       - "8080:80"
     networks:
       - industria40_net
+    environment:
+      - POSTGRES_HOST=banco_de_dados
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=fabrica
     depends_on:
-      banco_de_dados:
-        condition: service_healthy
+      - banco_de_dados
 """
     
     for i in range(1, num_simuladores + 1):
