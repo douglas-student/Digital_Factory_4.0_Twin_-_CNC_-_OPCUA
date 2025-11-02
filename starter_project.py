@@ -18,7 +18,7 @@ def listar_ips_containers(servicos):
         except subprocess.CalledProcessError:
             print(f"Erro ao inspecionar o serviço '{servico}'. Pode não estar rodando.")
 
-def gerar_docker_compose(num_simuladores):
+def gerar_docker_compose(simular, num_simuladores, ips_reais):
     """
     Gera o conteúdo do arquivo docker-compose.yml dinamicamente.
     """
@@ -26,18 +26,13 @@ def gerar_docker_compose(num_simuladores):
 networks:
   industria40_net:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.21.0.0/24
-          gateway: 172.21.0.1
 
 services:
   banco_de_dados:
     image: postgres:13
     container_name: postgres_db
     networks:
-      industria40_net:
-        ipv4_address: 172.21.0.2
+      - industria40_net
     environment:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
@@ -62,12 +57,15 @@ services:
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=fabrica
     depends_on:
-      banco_de_dados:
-        condition: service_healthy
+      - banco_de_dados
 """
-    endpoints = " ".join([f"opc.tcp://cnc_simulador_{i}:4840/freeopcua/server/" for i in range(1, num_simuladores + 1)])
     
-    yml_content += f"""\
+    if simular:
+        endpoints = " ".join([f"opc.tcp://cnc_simulador_{i}:4840/freeopcua/server/" for i in range(1, num_simuladores + 1)])
+    else:
+        endpoints = " ".join([f"opc.tcp://{ip}:4840/freeopcua/server/" for ip in ips_reais])
+    
+    yml_content += f"""
     command: python /app/src/cliente_monitoramento.py {endpoints}
 """
     
@@ -86,12 +84,12 @@ services:
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=fabrica
     depends_on:
-      banco_de_dados:
-        condition: service_healthy
+      - banco_de_dados
 """
     
-    for i in range(1, num_simuladores + 1):
-        yml_content += f"""
+    if simular:
+        for i in range(1, num_simuladores + 1):
+            yml_content += f"""
   cnc_simulador_{i}:
     image: cnc-simulador-image
     build: ./simulador_cnc
@@ -105,21 +103,36 @@ services:
     return yml_content
 
 def main():
-    try:
-        num_simuladores = int(input("Quantos simuladores de CNC você deseja criar? "))
-        if num_simuladores < 1:
-            print("Por favor, insira um número maior que zero.")
+    simular_str = input("Você deseja simular máquinas CNC? (s/n): ")
+    simular = simular_str.lower() == 's'
+    num_simuladores = 0
+    ips_reais = []
+
+    if simular:
+        try:
+            num_simuladores = int(input("Quantos simuladores de CNC você deseja criar? "))
+            if num_simuladores < 1:
+                print("Por favor, insira um número maior que zero.")
+                sys.exit(1)
+        except ValueError:
+            print("Entrada inválida. Por favor, digite um número.")
             sys.exit(1)
-    except ValueError:
-        print("Entrada inválida. Por favor, digite um número.")
-        sys.exit(1)
+    else:
+        ips_str = input("Por favor, digite os endereços IP das máquinas reais, separados por vírgula: ")
+        ips_reais = [ip.strip() for ip in ips_str.split(',')]
+        if not ips_reais or ips_reais == ['']:
+            print("Nenhum endereço IP fornecido. Encerrando.")
+            sys.exit(1)
 
     print("Gerando o arquivo docker-compose.yml...")
     with open("docker-compose.yml", "w") as f:
-        f.write(gerar_docker_compose(num_simuladores))
+        f.write(gerar_docker_compose(simular, num_simuladores, ips_reais))
 
     print("Iniciando os contêineres. Isso pode demorar na primeira vez...")
-    servicos_para_verificar = ["postgres_db", "web_dashboard", "cliente_monitoramento"] + [f"cnc_simulador_{i}" for i in range(1, num_simuladores + 1)]
+    servicos_para_verificar = ["postgres_db", "web_dashboard", "cliente_monitoramento"]
+    if simular:
+        servicos_para_verificar += [f"cnc_simulador_{i}" for i in range(1, num_simuladores + 1)]
+
     try:
         subprocess.run(["docker-compose", "up", "--build", "-d"], check=True)
         print("\nTodos os contêineres foram iniciados com sucesso!")
