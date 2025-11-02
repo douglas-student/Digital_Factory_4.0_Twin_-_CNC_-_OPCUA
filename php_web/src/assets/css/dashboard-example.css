@@ -1,0 +1,36 @@
+/* dashboard.css */
+
+/* Estilo para garantir que o rodapé fique no final */
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+main {
+    flex: 1; /* Garante que o conteúdo principal ocupe o espaço restante */
+}
+
+/* Ajustes de estilo para os cartões KPI */
+.card {
+    border-radius: 10px;
+    transition: transform 0.3s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.card-header {
+    font-weight: bold;
+}
+
+/* Cores de status para os KPIs e gráficos */
+.text-success { color: #28a745 !important; }
+.text-warning { color: #ffc107 !important; }
+.text-danger { color: #dc3545 !important; }
+
+/* Adiciona um efeito de sombra no cabeçalho */
+header {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
