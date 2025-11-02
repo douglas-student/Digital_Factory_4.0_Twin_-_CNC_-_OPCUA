@@ -3,6 +3,7 @@
 
 # Arquivos gerados e de configuração
 docker-compose.yml
+.terminal_config.json
 
 # Variáveis de ambiente e credenciais
 .env
