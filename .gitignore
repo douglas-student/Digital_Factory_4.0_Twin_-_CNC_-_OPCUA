@@ -1,3 +1,6 @@
+# Arquivos de sistema do Linux & CIA
+.directory
+
 # Arquivos gerados e de configuração
 docker-compose.yml
 
